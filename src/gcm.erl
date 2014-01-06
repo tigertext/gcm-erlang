@@ -109,7 +109,7 @@ handle_cast({send, RegIds, Message}, #state{key=Key, error_fun=ErrorFun} = State
         {ok, {{_, 200, _}, Headers, GCMResponse}} ->
             Json = jsx:decode(response_to_binary(GCMResponse)),
             {Multicast, Success, Failure, Canonical, Results} = get_response_fields(Json),
-            Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), multicast id=~p~n", [RegIds, Multicast])
+            Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), multicast id=~p~n", [RegIds, Multicast]),
             case to_be_parsed(Failure, Canonical) of
                 true ->
                     parse_results(Results, RegIds, ErrorFun),

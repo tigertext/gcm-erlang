@@ -108,7 +108,8 @@ handle_cast({send, RegIds, Message}, #state{key=Key, error_fun=ErrorFun} = State
     try httpc:request(post, {?BASEURL, [{"Authorization", ApiKey}], "application/json", GCMRequest}, [], []) of
         {ok, {{_, 200, _}, Headers, GCMResponse}} ->
             Json = jsx:decode(response_to_binary(GCMResponse)),
-            {_Multicast, _Success, Failure, Canonical, Results} = get_response_fields(Json),
+            {Multicast, Success, Failure, Canonical, Results} = get_response_fields(Json),
+            Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), multicast id=~p~n", [RegIds, Multicast])
             case to_be_parsed(Failure, Canonical) of
                 true ->
                     parse_results(Results, RegIds, ErrorFun),

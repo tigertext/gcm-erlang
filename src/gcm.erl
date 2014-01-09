@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start/2, start/3, stop/1, start_link/2, start_link/3, push/3]).
+-export([start/2, start/3, stop/1, start_link/2, start_link/3, push/3, push/4]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -48,8 +48,10 @@ start_link(Name, Key, ErrorFun) ->
 stop(Name) ->
     gen_server:call(Name, stop).
 
+push(Name, RegIds, Message, Message_Id) ->
+    gen_server:cast(Name, {send, RegIds, Message, Message_Id}).
 push(Name, RegIds, Message) ->
-    gen_server:cast(Name, {send, RegIds, Message}).
+    gen_server:cast(Name, {send, RegIds, Message, undefined}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -100,7 +102,7 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({send, RegIds, Message}, #state{key=Key, error_fun=ErrorFun} = State) ->
+handle_cast({send, RegIds, Message, Message_Id}, #state{key=Key, error_fun=ErrorFun} = State) ->
     lager:info("Message=~p; RegIds=~p~n", [Message, RegIds]),
     GCMRequest = jsx:encode([{<<"registration_ids">>, RegIds}|Message]),
     ApiKey = string:concat("key=", Key),
@@ -109,7 +111,7 @@ handle_cast({send, RegIds, Message}, #state{key=Key, error_fun=ErrorFun} = State
         {ok, {{_, 200, _}, Headers, GCMResponse}} ->
             Json = jsx:decode(response_to_binary(GCMResponse)),
             {Multicast, Success, Failure, Canonical, Results} = get_response_fields(Json),
-            Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), multicast id=~p~n", [RegIds, Multicast]),
+            Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), message_id=~p,  multicast id=~p~n", [RegIds, Message_Id, Multicast]),
             case to_be_parsed(Failure, Canonical) of
                 true ->
                     parse_results(Results, RegIds, ErrorFun),

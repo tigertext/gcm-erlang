@@ -34,5 +34,24 @@ start_child(Name, ApiKey, ErrorFun) ->
     supervisor:start_child(?MODULE, [Name, ApiKey, ErrorFun]).
 
 init([]) ->
+    init_concurrency_limits(get_concurrency_limits()),
     {ok, { {simple_one_for_one, 5, 10}, [?CHILD(gcm, worker)]} }.
 
+get_concurrency_limits() ->
+    Config_Concurrency_Limits = application:get_env(gcm, cxy_limits, []),
+    Reqd_Set = sets:from_list([gcm]),
+    Specified_Set = sets:from_list([Type || {Type, _, _} <- Config_Concurrency_Limits]),
+    case sets:is_subset(Reqd_Set, Specified_Set) of
+        false -> Missing_Limits = sets:to_list(sets:subtract(Reqd_Set, Specified_Set)),
+                 lager:error("Missing concurrency configuration limits for ~p", [Missing_Limits]),
+                 [];
+        true  -> Config_Concurrency_Limits
+    end.
+
+init_concurrency_limits(Concurrency_Limits) ->
+    ok = cxy_ctl:init(Concurrency_Limits),
+    Limits = [get_cxy_props(Props) || Props <- cxy_ctl:concurrency_types()],
+    lager:info("cxy_ctl limits set ~p", [Limits]),
+    ok.
+
+get_cxy_props(Props) -> [proplists:get_value(P, Props) || P <- [task_type, max_procs, max_history]].

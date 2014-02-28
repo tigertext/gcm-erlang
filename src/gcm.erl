@@ -103,7 +103,7 @@ handle_call(_Request, _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_cast({send, RegIds, Message, Message_Id}, #state{key=Key, error_fun=ErrorFun} = State) ->
-    ok = cxy_ctl:execute_task(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]),
+    true = cxy_ctl:execute_task(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]),
     {noreply, State};
 
 handle_cast(_Msg, State) ->

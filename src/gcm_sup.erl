@@ -49,7 +49,7 @@ get_concurrency_limits() ->
     end.
 
 init_concurrency_limits(Concurrency_Limits) ->
-    ok = cxy_ctl:init(Concurrency_Limits),
+    true = cxy_ctl:init(Concurrency_Limits),
     Limits = [get_cxy_props(Props) || Props <- cxy_ctl:concurrency_types()],
     lager:info("cxy_ctl limits set ~p", [Limits]),
     ok.

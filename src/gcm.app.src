@@ -9,7 +9,7 @@
         jsx,
         lager
     ]},
-    {included_applications, [dk_cxy]},
+    {included_applications, [epocxy]},
     {mod, {gcm_app, []}},
     {env, []}
 ]}.

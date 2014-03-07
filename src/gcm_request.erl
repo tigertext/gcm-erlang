@@ -4,13 +4,15 @@
 -export([send/2]).
 
 -define(BASEURL, "https://android.googleapis.com/gcm/send").
+-define(TIMEOUT, 3000). %% 3 seconds
+-define(CONNECT_TIMEOUT, 1000). %% 1 seconds
 
 send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
     lager:info("Message=~p; RegIds=~p~n", [Message, RegIds]),
     GCMRequest = jsx:encode([{<<"registration_ids">>, RegIds}|Message]),
     ApiKey = string:concat("key=", Key),
 
-    try httpc:request(post, {?BASEURL, [{"Authorization", ApiKey}], "application/json", GCMRequest}, [], []) of
+    try httpc:request(post, {?BASEURL, [{"Authorization", ApiKey}], "application/json", GCMRequest}, [{timeout, ?TIMEOUT}, {connect_timeout, ?CONNECT_TIMEOUT}], []) of
         {ok, {{_, 200, _}, _Headers, GCMResponse}} ->
             Json = jsx:decode(response_to_binary(GCMResponse)),
             {Multicast, Success, Failure, Canonical, Results} = get_response_fields(Json),

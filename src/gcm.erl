@@ -20,8 +20,6 @@
 -define(SERVER, ?MODULE). 
 
 -define(BASEURL, "https://android.googleapis.com/gcm/send").
--define(TIMEOUT, 3000). %% 3 seconds
--define(CONNECT_TIMEOUT, 1000). %% 1 seconds
 
 -record(state, {key, retry_after, error_fun}).
 
@@ -105,48 +103,8 @@ handle_call(_Request, _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_cast({send, RegIds, Message, Message_Id}, #state{key=Key, error_fun=ErrorFun} = State) ->
-    lager:info("Message=~p; RegIds=~p~n", [Message, RegIds]),
-    GCMRequest = jsx:encode([{<<"registration_ids">>, RegIds}|Message]),
-    ApiKey = string:concat("key=", Key),
-
-    try httpc:request(post, {?BASEURL, [{"Authorization", ApiKey}], "application/json", GCMRequest}, [{timeout, ?TIMEOUT}, {connect_timeout, ?CONNECT_TIMEOUT}], []) of
-        {ok, {{_, 200, _}, Headers, GCMResponse}} ->
-            Json = jsx:decode(response_to_binary(GCMResponse)),
-            {Multicast, Success, Failure, Canonical, Results} = get_response_fields(Json),
-            Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), message_id=~p,  multicast id=~p~n", [RegIds, Message_Id, Multicast]),
-            case to_be_parsed(Failure, Canonical) of
-                true ->
-                    parse_results(Results, RegIds, ErrorFun),
-                    {noreply, State};
-                false ->
-                    {noreply, State}
-            end;
-        {error, Reason} ->
-            %% Some general error during the request.
-            lager:error("error in request: ~p~n", [Reason]),
-            {noreply, State};
-        {ok, {{_, 400, _}, _, _}} ->
-            %% Some error in the Json.
-            {noreply, State};
-        {ok, {{_, 401, _}, _, _}} ->
-            %% Some error in the authorization.
-            lager:error("authorization error!", []),
-            {noreply, State};
-        {ok, {{_, Code, _}, _, _}} when Code >= 500 andalso Code =< 599 ->
-            %% TODO: retry with exponential back-off
-            {noreply, State};
-        {ok, {{_StatusLine, _, _}, _, _Body}} ->
-            %% Request handled but some error like timeout happened.
-            {noreply, State};
-        OtherError ->
-            %% Some other nasty error.
-            lager:error("other error: ~p~n", [OtherError]),
-            {noreply, State}
-    catch
-        Exception ->
-            lager:error("exception ~p in call to URL: ~p~n", [Exception, ?BASEURL]),
-            {noreply, State}
-    end;
+    ok = cxy_ctl:execute_task(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]),
+    {noreply, State};
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
@@ -189,46 +147,6 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
-response_to_binary(Json) when is_binary(Json) ->
-    Json;
-
-response_to_binary(Json) when is_list(Json) ->
-    list_to_binary(Json).
-
-get_response_fields(Json) ->
-    {
-        proplists:get_value(<<"multicast_id">>, Json),
-        proplists:get_value(<<"success">>, Json),
-        proplists:get_value(<<"failure">>, Json),
-        proplists:get_value(<<"canonical_ids">>, Json),
-        proplists:get_value(<<"results">>, Json)
-    }.
-
-to_be_parsed(0, 0) -> false;
-to_be_parsed(_Failure, _Canonical) -> true.
-
-parse_results([Result|Results], [RegId|RegIds], ErrorFun) ->
-    case {
-        proplists:get_value(<<"error">>, Result),
-        proplists:get_value(<<"message_id">>, Result),
-        proplists:get_value(<<"registration_id">>, Result)
-    } of
-        {Error,undefined,undefined} when Error =/= undefined ->
-            ErrorFun(Error, RegId),
-            parse_results(Results, RegIds, ErrorFun);
-        {undefined,MessageId,undefined} when MessageId =/= undefined -> 
-            lager:info("Message sent.~n", []),
-            parse_results(Results, RegIds, ErrorFun);
-        {undefined,MessageId,NewRegId} when MessageId =/= undefined andalso NewRegId =/= undefined ->
-            ErrorFun(<<"NewRegistrationId">>, {RegId, NewRegId}),
-            parse_results(Results, RegIds, ErrorFun)
-    end;
-parse_results([], [], _ErrorFun) ->
-    ok.
-
 handle_error(<<"NewRegistrationId">>, {RegId, NewRegId}) ->
     lager:info("Message sent. Update id ~p with new id ~p.~n", [RegId, NewRegId]),
     ok;
@@ -258,13 +176,3 @@ handle_error(UnexpectedError, RegId) ->
     lager:error("unexpected error ~p in ~p~n", [UnexpectedError, RegId]),
     ok.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Other possible errors:					%%
-%%	<<"InvalidPackageName">>				%%
-%%      <<"MissingRegistration">>				%%
-%%	<<"MismatchSenderId">>					%%
-%%	<<"MessageTooBig">>					%%
-%%      <<"InvalidDataKey">>					%%
-%%	<<"InvalidTtl">>					%%
-%%								%%	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

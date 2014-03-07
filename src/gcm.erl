@@ -20,6 +20,8 @@
 -define(SERVER, ?MODULE). 
 
 -define(BASEURL, "https://android.googleapis.com/gcm/send").
+-define(TIMEOUT, 3000). %% 3 seconds
+-define(CONNECT_TIMEOUT, 1000). %% 1 seconds
 
 -record(state, {key, retry_after, error_fun}).
 
@@ -107,7 +109,7 @@ handle_cast({send, RegIds, Message, Message_Id}, #state{key=Key, error_fun=Error
     GCMRequest = jsx:encode([{<<"registration_ids">>, RegIds}|Message]),
     ApiKey = string:concat("key=", Key),
 
-    try httpc:request(post, {?BASEURL, [{"Authorization", ApiKey}], "application/json", GCMRequest}, [], []) of
+    try httpc:request(post, {?BASEURL, [{"Authorization", ApiKey}], "application/json", GCMRequest}, [{timeout, ?TIMEOUT}, {connect_timeout, ?CONNECT_TIMEOUT}], []) of
         {ok, {{_, 200, _}, Headers, GCMResponse}} ->
             Json = jsx:decode(response_to_binary(GCMResponse)),
             {Multicast, Success, Failure, Canonical, Results} = get_response_fields(Json),

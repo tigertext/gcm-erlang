@@ -163,12 +163,12 @@ handle_error(<<"InternalServerError">>, RegId) ->
 
 handle_error(<<"InvalidRegistration">>, RegId) ->
     %% Invalid registration id in database.
-    lager:error("invalid registration ~p~n", [RegId]),
+    lager:warning("invalid registration ~p~n", [RegId]),
     ok;
 
 handle_error(<<"NotRegistered">>, RegId) ->
     %% Application removed. Delete device from database.
-    lager:error("not registered ~p~n", [RegId]),
+    lager:warning("not registered ~p~n", [RegId]),
     ok;
 
 handle_error(UnexpectedError, RegId) ->

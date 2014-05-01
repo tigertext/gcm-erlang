@@ -76,15 +76,21 @@ parse_results([Result|Results], [RegId|RegIds], ErrorFun) ->
         proplists:get_value(<<"message_id">>, Result),
         proplists:get_value(<<"registration_id">>, Result)
     } of
-        {Error,undefined,undefined} when Error =/= undefined ->
-            ErrorFun(Error, RegId),
-            parse_results(Results, RegIds, ErrorFun);
-        {undefined,MessageId,undefined} when MessageId =/= undefined -> 
-            lager:info("Message sent.~n", []),
-            parse_results(Results, RegIds, ErrorFun);
-        {undefined,MessageId,NewRegId} when MessageId =/= undefined andalso NewRegId =/= undefined ->
-            ErrorFun(<<"NewRegistrationId">>, {RegId, NewRegId}),
-            parse_results(Results, RegIds, ErrorFun)
+    % First handle the happy path
+      {_, MessageId, undefined} when MessageId =/= undefined ->
+        lager:info("Message sent.~n", []),
+        parse_results(Results, RegIds, ErrorFun);
+    % Next is when there's a new registration_id
+      {_, MessageId, NewRegId} when MessageId =/= undefined andalso NewRegId =/= undefined ->
+        ErrorFun(<<"NewRegistrationId">>, {RegId, NewRegId}),
+        parse_results(Results, RegIds, ErrorFun);
+    % Then, there was an error...
+      {Error, _, _} when Error =/= undefined ->
+        ErrorFun(Error, RegId),
+        parse_results(Results, RegIds, ErrorFun);
+    % And last but not least, let's not forget what we don't know yet...
+      _ ->
+        lager:warning("Invalid results for registration_id [~p]: ~p", [RegId, Result])
     end;
 parse_results([], [], _ErrorFun) ->
     ok.

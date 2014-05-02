@@ -81,7 +81,7 @@ parse_results([Result|Results], [RegId|RegIds], ErrorFun) ->
         lager:info("Message sent.~n", []),
         parse_results(Results, RegIds, ErrorFun);
     % Next is when there's a new registration_id
-      {_, MessageId, NewRegId} when MessageId =/= undefined andalso NewRegId =/= undefined ->
+      {_, MessageId, NewRegId} when MessageId =/= undefined, NewRegId =/= undefined ->
         ErrorFun(<<"NewRegistrationId">>, {RegId, NewRegId}),
         parse_results(Results, RegIds, ErrorFun);
     % Then, there was an error...

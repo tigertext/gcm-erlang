@@ -147,15 +147,15 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-handle_error(Error = <<"NewRegistrationId">>, {RegId, NewRegId}) ->
-    handle_error_generic(Error, token_update, [RegId, NewRegId]);
+handle_error(<<"NewRegistrationId">>, {RegId, NewRegId}) ->
+    handle_error_generic(token_update, [RegId, NewRegId]);
 
-handle_error(Error, RegId) when Error =:= <<"InvalidRegistration">> orelse Error =:= <<"NotRegistered">> ->
-    %% Invalid registration id in database.
-    handle_error_generic(Error, token_error, [RegId]);
+handle_error(Error, RegId) when Error =:= <<"InvalidRegistration">>; Error =:= <<"NotRegistered">> ->
+    % Invalid registration id in database.
+    handle_error_generic(token_error, [RegId]);
 
 handle_error(<<"Unavailable">>, RegId) ->
-    %% The server couldn't process the request in time. Retry later with exponential backoff.
+    % The server couldn't process the request in time. Retry later with exponential backoff.
     lager:error("unavailable ~p~n", [RegId]),
     ok;
 
@@ -165,21 +165,19 @@ handle_error(<<"InternalServerError">>, RegId) ->
     ok;
 
 handle_error(UnexpectedError, RegId) ->
-    %% There was an unexpected error that couldn't be identified.
+    % There was an unexpected error that couldn't be identified.
     lager:error("unexpected error ~p in ~p~n", [UnexpectedError, RegId]),
     ok.
 
-handle_error_generic(Error, Function, Args) ->
+handle_error_generic(Function, Args) ->
     case application:get_env(gcm, feedback) of
         {ok, Funcs} ->
             case proplists:get_value(Function, Funcs) of
                 {Mod, Func} ->
                     ok = erlang:apply(Mod, Func, Args);
                 _ ->
-                    lager:error("gcm ~p function missing while handling ~p, arguments: ~p~n", [Function, Error, Args]),
-                    error
+                    no_push_feedback_channel
             end;
-        undefined ->
-            lager:error("gcm feedback functions missing. Failed handling ~p, arguments: ~p~n", [Error, args]),
-            error
+        _ ->
+            no_push_feedback_channel
     end.

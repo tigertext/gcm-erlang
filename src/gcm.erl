@@ -17,9 +17,10 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
--define(SERVER, ?MODULE). 
+-define(SERVER, ?MODULE).
 
 -define(BASEURL, "https://android.googleapis.com/gcm/send").
+-define(GCM_TYPE, "gcm").
 
 -record(state, {key, retry_after, error_fun}).
 
@@ -148,11 +149,11 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 handle_error(<<"NewRegistrationId">>, {RegId, NewRegId}) ->
-    handle_error_generic(token_update, [RegId, NewRegId]);
+    handle_error_generic(token_update, [?GCM_TYPE, RegId, NewRegId]);
 
 handle_error(Error, RegId) when Error =:= <<"InvalidRegistration">>; Error =:= <<"NotRegistered">> ->
     % Invalid registration id in database.
-    handle_error_generic(token_error, [RegId]);
+    handle_error_generic(token_error, [?GCM_TYPE, RegId]);
 
 handle_error(<<"Unavailable">>, RegId) ->
     % The server couldn't process the request in time. Retry later with exponential backoff.

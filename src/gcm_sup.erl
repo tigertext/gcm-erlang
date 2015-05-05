@@ -54,4 +54,4 @@ init_concurrency_limits(Concurrency_Limits) ->
     lager:info("cxy_ctl limits set ~p", [Limits]),
     ok.
 
-get_cxy_props(Props) -> [proplists:get_value(P, Props) || P <- [task_type, max_procs, max_history]].
+get_cxy_props(Props) -> [proplists:get_value(P, Props) || P <- [task_type, max_procs, max_history, slow_factor_as_percentage]].

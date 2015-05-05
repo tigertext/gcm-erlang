@@ -40,7 +40,7 @@ init([]) ->
 get_concurrency_limits() ->
     Config_Concurrency_Limits = application:get_env(gcm, cxy_limits, []),
     Reqd_Set = sets:from_list([gcm]),
-    Specified_Set = sets:from_list([Type || {Type, _, _} <- Config_Concurrency_Limits]),
+    Specified_Set = sets:from_list([Type || {Type, _, _, _} <- Config_Concurrency_Limits]),
     case sets:is_subset(Reqd_Set, Specified_Set) of
         false -> Missing_Limits = sets:to_list(sets:subtract(Reqd_Set, Specified_Set)),
                  lager:error("Missing concurrency configuration limits for ~p", [Missing_Limits]),

@@ -87,7 +87,7 @@ init([Key, ErrorFun]) ->
 %%--------------------------------------------------------------------
 handle_call(stop, _From, State) ->
     {stop, normal, stopped, State};
-handle_cast({send, RegIds, Message, Message_Id}, _From, #state{key=Key, error_fun=ErrorFun} = State) ->
+handle_call({send, RegIds, Message, Message_Id}, _From, #state{key=Key, error_fun=ErrorFun} = State) ->
     ok = cxy_ctl:execute_task(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]),
     {reply, ok, State};
 handle_call(_Request, _From, State) ->

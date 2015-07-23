@@ -17,9 +17,10 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
--define(SERVER, ?MODULE). 
+-define(SERVER, ?MODULE).
 
 -define(BASEURL, "https://android.googleapis.com/gcm/send").
+-define(GCM_TYPE, "gcm").
 
 -record(state, {key, retry_after, error_fun}).
 
@@ -148,11 +149,14 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 handle_error(<<"NewRegistrationId">>, {RegId, NewRegId}) ->
-    lager:info("Message sent. Update id ~p with new id ~p.~n", [RegId, NewRegId]),
-    ok;
+    handle_error_generic(token_update, [?GCM_TYPE, RegId, NewRegId]);
+
+handle_error(Error, RegId) when Error =:= <<"InvalidRegistration">>; Error =:= <<"NotRegistered">> ->
+    % Invalid registration id in database.
+    handle_error_generic(token_error, [?GCM_TYPE, RegId]);
 
 handle_error(<<"Unavailable">>, RegId) ->
-    %% The server couldn't process the request in time. Retry later with exponential backoff.
+    % The server couldn't process the request in time. Retry later with exponential backoff.
     lager:error("unavailable ~p~n", [RegId]),
     ok;
 
@@ -161,18 +165,20 @@ handle_error(<<"InternalServerError">>, RegId) ->
     lager:error("internal server error ~p~n", [RegId]),
     ok;
 
-handle_error(<<"InvalidRegistration">>, RegId) ->
-    %% Invalid registration id in database.
-    lager:warning("invalid registration ~p~n", [RegId]),
-    ok;
-
-handle_error(<<"NotRegistered">>, RegId) ->
-    %% Application removed. Delete device from database.
-    lager:warning("not registered ~p~n", [RegId]),
-    ok;
-
 handle_error(UnexpectedError, RegId) ->
-    %% There was an unexpected error that couldn't be identified.
+    % There was an unexpected error that couldn't be identified.
     lager:error("unexpected error ~p in ~p~n", [UnexpectedError, RegId]),
     ok.
 
+handle_error_generic(Function, Args) ->
+    case application:get_env(gcm, feedback) of
+        {ok, Funcs} ->
+            case proplists:get_value(Function, Funcs) of
+                {Mod, Func} ->
+                    ok = erlang:apply(Mod, Func, Args);
+                _ ->
+                    no_push_feedback_channel
+            end;
+        _ ->
+            no_push_feedback_channel
+    end.

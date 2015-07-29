@@ -50,9 +50,9 @@ stop(Name) ->
     gen_server:call(Name, stop).
 
 push(Name, RegIds, Message, Message_Id) ->
-    gen_server:cast(Name, {send, RegIds, Message, Message_Id}).
+    ok = gen_server:call(Name, {send, RegIds, Message, Message_Id}).
 push(Name, RegIds, Message) ->
-    gen_server:cast(Name, {send, RegIds, Message, undefined}).
+    ok = gen_server:call(Name, {send, RegIds, Message, undefined}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -88,7 +88,9 @@ init([Key, ErrorFun]) ->
 %%--------------------------------------------------------------------
 handle_call(stop, _From, State) ->
     {stop, normal, stopped, State};
-
+handle_call({send, RegIds, Message, Message_Id}, _From, #state{key=Key, error_fun=ErrorFun} = State) ->
+    ok = cxy_ctl:execute_task(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]),
+    {reply, ok, State};
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
@@ -103,10 +105,6 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({send, RegIds, Message, Message_Id}, #state{key=Key, error_fun=ErrorFun} = State) ->
-    ok = cxy_ctl:execute_task(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]),
-    {noreply, State};
-
 handle_cast(_Msg, State) ->
     {noreply, State}.
 

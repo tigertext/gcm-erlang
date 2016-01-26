@@ -4,8 +4,8 @@
 -export([send/2]).
 
 -define(BASEURL, "https://android.googleapis.com/gcm/send").
--define(TIMEOUT, 3000). %% 3 seconds
--define(CONNECT_TIMEOUT, 1000). %% 1 seconds
+-define(TIMEOUT, 6000). %% 6 seconds
+-define(CONNECT_TIMEOUT, 3000). %% 3 seconds
 
 send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
     lager:info("Message=~p; RegIds=~p~n", [Message, RegIds]),

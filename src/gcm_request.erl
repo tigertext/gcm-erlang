@@ -3,7 +3,7 @@
 %% API
 -export([send/2]).
 
--define(BASEURL, "https://android.googleapis.com/gcm/send").
+-define(BASEURL, "https://fcm.googleapis.com/fcm/send").
 -define(TIMEOUT, 6000). %% 6 seconds
 -define(CONNECT_TIMEOUT, 3000). %% 3 seconds
 

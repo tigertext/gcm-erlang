@@ -19,8 +19,8 @@
 
 -define(SERVER, ?MODULE).
 
--define(BASEURL, "https://android.googleapis.com/gcm/send").
--define(GCM_TYPE, "gcm").
+-define(BASEURL, "https://fcm.googleapis.com/fcm/send").
+-define(GCM_TYPE, "fcm").
 
 -record(state, {key, retry_after, error_fun}).
 

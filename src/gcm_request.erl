@@ -19,7 +19,7 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
             Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), message_id=~p,  multicast id=~p~n", [RegIds, Message_Id, Multicast]),
             case to_be_parsed(Failure, Canonical) of
                 true ->
-                    parse_results(Results, RegIds, ErrorFun);
+                    parse_results(Results, RegIds, ErrorFun,Message);
                 false -> false
             end;
         {error, Reason} ->
@@ -70,7 +70,7 @@ get_response_fields(Json) ->
 to_be_parsed(0, 0) -> false;
 to_be_parsed(_Failure, _Canonical) -> true.
 
-parse_results([Result | Results], [RegId | RegIds], ErrorFun) ->
+parse_results([Result | Results], [RegId | RegIds], ErrorFun, Message) ->
     case {
         proplists:get_value(<<"error">>, Result),
         proplists:get_value(<<"message_id">>, Result),
@@ -79,21 +79,21 @@ parse_results([Result | Results], [RegId | RegIds], ErrorFun) ->
         % First handle the normal successful response
         {_, MessageId, undefined} when MessageId =/= undefined ->
             lager:info("Message sent.~n", []),
-            parse_results(Results, RegIds, ErrorFun);
+            parse_results(Results, RegIds, ErrorFun,Message);
         % Next is when there's a new registration_id
         {_, MessageId, NewRegId} when MessageId =/= undefined, NewRegId =/= undefined ->
-            ErrorFun(<<"NewRegistrationId">>, {RegId, NewRegId}),
-            parse_results(Results, RegIds, ErrorFun);
+            ErrorFun(<<"NewRegistrationId">>, {RegId, NewRegId}, Message),
+            parse_results(Results, RegIds, ErrorFun,Message);
         % Then, there might be an error...
         {Error, _, _} when Error =/= undefined ->
-            ErrorFun(Error, RegId),
-            parse_results(Results, RegIds, ErrorFun);
+            ErrorFun(Error, RegId, Message),
+            parse_results(Results, RegIds, ErrorFun, Message);
         % And last but not least, let's not forget what we don't know yet...
         _ ->
             lager:warning("Invalid results for registration_id [~p]: ~p", [RegId, Result]),
-            parse_results(Results, RegIds, ErrorFun)
+            parse_results(Results, RegIds, ErrorFun, Message)
     end;
-parse_results([], [], _ErrorFun) ->
+parse_results([], [], _ErrorFun,_Message) ->
     ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -104,5 +104,5 @@ parse_results([], [], _ErrorFun) ->
 %%	<<"MessageTooBig">>					%%
 %%      <<"InvalidDataKey">>					%%
 %%	<<"InvalidTtl">>					%%
-%%								%%	
+%%								%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

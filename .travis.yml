@@ -1,5 +1,5 @@
 language: erlang
-script: "./rebar compile && ./rebar skip_deps=true eunit"
+script: "./rebar3 compile && ./rebar3 skip_deps=true eunit"
 notifications:
   email: paolo.dincau@gmail.com
 otp_release:

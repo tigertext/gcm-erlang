@@ -79,11 +79,11 @@ parse_results([Result | Results], [RegId | RegIds], ErrorFun, Message) ->
         % First handle the normal successful response
         {_, MessageId, undefined} when MessageId =/= undefined ->
             lager:info("Message sent.~n", []),
-            parse_results(Results, RegIds, ErrorFun,Message);
+            parse_results(Results, RegIds, ErrorFun, Message);
         % Next is when there's a new registration_id
         {_, MessageId, NewRegId} when MessageId =/= undefined, NewRegId =/= undefined ->
             ErrorFun(<<"NewRegistrationId">>, {RegId, NewRegId}, Message),
-            parse_results(Results, RegIds, ErrorFun,Message);
+            parse_results(Results, RegIds, ErrorFun, Message);
         % Then, there might be an error...
         {Error, _, _} when Error =/= undefined ->
             ErrorFun(Error, RegId, Message),

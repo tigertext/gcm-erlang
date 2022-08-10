@@ -19,7 +19,7 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
             Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), message_id=~p,  multicast id=~p~n", [RegIds, Message_Id, Multicast]),
             case to_be_parsed(Failure, Canonical) of
                 true ->
-                    parse_results(Results, RegIds, ErrorFun,Message);
+                    parse_results(Results, RegIds, ErrorFun, Message);
                 false -> false
             end;
         {error, Reason} ->
@@ -93,7 +93,7 @@ parse_results([Result | Results], [RegId | RegIds], ErrorFun, Message) ->
             lager:warning("Invalid results for registration_id [~p]: ~p", [RegId, Result]),
             parse_results(Results, RegIds, ErrorFun, Message)
     end;
-parse_results([], [], _ErrorFun,_Message) ->
+parse_results([], [], _ErrorFun, _Message) ->
     ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

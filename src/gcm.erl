@@ -28,7 +28,7 @@
 %%% API
 %%%===================================================================
 start(Name, Key) ->
-    start(Name, Key, fun handle_error/2).
+    start(Name, Key, fun handle_error/3).
 
 start(Name, Key, ErrorFun) ->
     gcm_sup:start_child(Name, Key, ErrorFun).
@@ -41,7 +41,7 @@ start(Name, Key, ErrorFun) ->
 %% @end
 %%--------------------------------------------------------------------
 start_link(Name, Key) ->
-    start_link(Name, Key, fun handle_error/2).
+    start_link(Name, Key, fun handle_error/3).
 
 start_link(Name, Key, ErrorFun) ->
     gen_server:start_link({local, Name}, ?MODULE, [Key, ErrorFun], []).
@@ -146,24 +146,24 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-handle_error(<<"NewRegistrationId">>, {RegId, NewRegId}) ->
+handle_error(<<"NewRegistrationId">>, {RegId, NewRegId}, _Message) ->
     handle_error_generic(token_update, [?GCM_TYPE, RegId, NewRegId]);
 
-handle_error(Error, RegId) when Error =:= <<"InvalidRegistration">>; Error =:= <<"NotRegistered">> ->
+handle_error(Error, RegId, _Message) when Error =:= <<"InvalidRegistration">>; Error =:= <<"NotRegistered">> ->
     % Invalid registration id in database.
     handle_error_generic(token_error, [?GCM_TYPE, RegId]);
 
-handle_error(<<"Unavailable">>, RegId) ->
+handle_error(<<"Unavailable">>, RegId, _Message) ->
     % The server couldn't process the request in time. Retry later with exponential backoff.
     lager:error("unavailable ~p~n", [RegId]),
     ok;
 
-handle_error(<<"InternalServerError">>, RegId) ->
+handle_error(<<"InternalServerError">>, RegId, _Message) ->
     % GCM had an internal server error. Retry later with exponential backoff.
     lager:error("internal server error ~p~n", [RegId]),
     ok;
 
-handle_error(UnexpectedError, RegId) ->
+handle_error(UnexpectedError, RegId, _Message) ->
     % There was an unexpected error that couldn't be identified.
     lager:error("unexpected error ~p in ~p~n", [UnexpectedError, RegId]),
     ok.

@@ -146,12 +146,12 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-handle_error(<<"NewRegistrationId">>, {RegId, NewRegId}, _Message) ->
-    handle_error_generic(token_update, [?GCM_TYPE, RegId, NewRegId]);
+handle_error(<<"NewRegistrationId">>, {RegId, NewRegId}, Message) ->
+    handle_error_generic(token_update, [?GCM_TYPE, RegId, NewRegId, Message]);
 
-handle_error(Error, RegId, _Message) when Error =:= <<"InvalidRegistration">>; Error =:= <<"NotRegistered">> ->
+handle_error(Error, RegId, Message) when Error =:= <<"InvalidRegistration">>; Error =:= <<"NotRegistered">> ->
     % Invalid registration id in database.
-    handle_error_generic(token_error, [?GCM_TYPE, RegId]);
+    handle_error_generic(token_error, [?GCM_TYPE, RegId, Message]);
 
 handle_error(<<"Unavailable">>, RegId, _Message) ->
     % The server couldn't process the request in time. Retry later with exponential backoff.

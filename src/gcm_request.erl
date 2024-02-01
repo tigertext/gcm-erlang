@@ -1,9 +1,11 @@
 -module(gcm_request).
 
 %% API
--export([send/2]).
+-export([send/2, send_from_project/2]).
 
 -define(BASEURL, "https://fcm.googleapis.com/fcm/send").
+-define(PROJECT_BASEURL, "https://fcm.googleapis.com").
+-define(PROJECT_SEND_METHOD, "message:send").
 -define(TIMEOUT, 6000). %% 6 seconds
 -define(CONNECT_TIMEOUT, 3000). %% 3 seconds
 
@@ -48,6 +50,11 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
             lager:error("exception ~p in call to URL: ~p~n", [Exception, ?BASEURL]),
             {http_error, {exception, Exception}}
     end.
+
+send_from_project({ProjectId, RegIds, Message}, {_Key, _ErrorFun}) ->
+    Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
+    lager:info("FCM Project sending push (dry-run): Url=~p \n Message=~p \n RegIds=~p", [Url, Message, RegIds]),
+    ok.
 
 %%%===================================================================
 %%% Internal functions
@@ -95,6 +102,9 @@ parse_results([Result | Results], [RegId | RegIds], ErrorFun, Message) ->
     end;
 parse_results([], [], _ErrorFun, _Message) ->
     ok.
+
+build_project_url(ProjectId, Method) ->
+    ?PROJECT_BASEURL ++ "/v1/projects/" ++ ProjectId ++ "/" ++ Method.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Other possible errors:					%%

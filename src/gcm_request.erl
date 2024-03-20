@@ -14,7 +14,7 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
     Body = [{<<"registration_ids">>, RegIds}|Message],
     Headers = [{"Authorization", string:concat("key=", Key)}],
 
-    case json_post_request(?BASEURL, [{"Authorization", ApiKey}], Body) of
+    case json_post_request(?BASEURL, Headers, Body) of
       {ok, Json} ->
         Multicast = proplists:get_value(<<"multicast_id">>, Json),
         Success = proplists:get_value(<<"success">>, Json),

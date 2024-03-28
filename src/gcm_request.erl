@@ -11,44 +11,22 @@
 
 send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
     lager:info("Message=~p; RegIds=~p~n", [Message, RegIds]),
-    GCMRequest = jsx:encode([{<<"registration_ids">>, RegIds}|Message]),
-    ApiKey = string:concat("key=", Key),
+    Body = [{<<"registration_ids">>, RegIds}|Message],
+    Headers = [{"Authorization", string:concat("key=", Key)}],
 
-    try httpc:request(post, {?BASEURL, [{"Authorization", ApiKey}], "application/json", GCMRequest}, [{timeout, ?TIMEOUT}, {connect_timeout, ?CONNECT_TIMEOUT}], []) of
-        {ok, {{_, 200, _}, _Headers, GCMResponse}} ->
-            Json = jsx:decode(response_to_binary(GCMResponse)),
-            {Multicast, Success, Failure, Canonical, Results} = get_response_fields(Json),
-            Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), message_id=~p,  multicast id=~p~n", [RegIds, Message_Id, Multicast]),
-            case to_be_parsed(Failure, Canonical) of
-                true ->
-                    parse_results(Results, RegIds, ErrorFun, Message);
-                false -> false
-            end;
-        {error, Reason} ->
-            %% Some general error during the request.
-            lager:error("error in request: ~p~n", [Reason]),
-            {error, Reason};
-        {ok, {{_, 400, _}, _, _}} ->
-            %% Some error in the Json.
-            {http_error, 400};
-        {ok, {{_, 401, _}, _, _}} ->
-            %% Some error in the authorization.
-            lager:error("authorization error!", []),
-            {http_error, 401};
-        {ok, {{_, Code, _}, _, _}} when Code >= 500 andalso Code =< 599 ->
-            %% TODO: retry with exponential back-off
-            {http_error, 500};
-        {ok, {{StatusLine, _, _}, _, _Body}} ->
-            %% Request handled but some error like timeout happened.
-            {http_error, StatusLine};
-        OtherError ->
-            %% Some other nasty error.
-            lager:error("other error: ~p~n", [OtherError]),
-            {http_error, {nasty, OtherError}}
-    catch
-        Exception ->
-            lager:error("exception ~p in call to URL: ~p~n", [Exception, ?BASEURL]),
-            {http_error, {exception, Exception}}
+    case json_post_request(?BASEURL, Headers, Body) of
+      {ok, Json} ->
+        Multicast = proplists:get_value(<<"multicast_id">>, Json),
+        Success = proplists:get_value(<<"success">>, Json),
+        Failure = proplists:get_value(<<"failure">>, Json),
+        Canonical = proplists:get_value(<<"canonical_ids">>, Json),
+        Results = proplists:get_value(<<"results">>, Json),
+        Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), message_id=~p,  multicast id=~p~n", [RegIds, Message_Id, Multicast]),
+        case {Failure, Canonical} of
+            {0, 0} -> false;
+            {_Any, _Any} -> parse_results(Results, RegIds, ErrorFun, Message)
+        end;
+      OtherError -> OtherError
     end.
 
 send_from_project({ProjectId, RegIds, Message}, {_Key, _ErrorFun}) ->
@@ -59,23 +37,37 @@ send_from_project({ProjectId, RegIds, Message}, {_Key, _ErrorFun}) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-response_to_binary(Json) when is_binary(Json) ->
-    Json;
+json_post_request(BaseUrl, Headers, Body) ->
+  Payload = jsx:encode(Body),
+  Options = [{timeout, ?TIMEOUT}, {connect_timeout, ?CONNECT_TIMEOUT}],
+  try httpc:request(post, {BaseUrl, Headers, "application/json", Payload}, Options, []) of
+    {error, Reason} ->
+      lager:error("error in request: ~p~n", [Reason]),
+      {error, Reason};
+    {ok, {{_, 200, _}, _Headers, Response}} ->
+      {ok, jsx:decode(response_to_binary(Response))};
+    {ok, {{_, Code, _}, _, _}} when Code >= 500 andalso Code =< 599 ->
+      lager:error("Server error: ~p~n", [Code]),
+      {http_error, Code};
+    {ok, {{_, Code, _}, _, _}} when Code >= 400 andalso Code =< 499 ->
+      lager:warn("Client error: ~p~n", [Code]),
+      {http_error, Code};
+    {ok, {{_, Code, _}, _, _}} ->
+      lager:warn("Unknown error: ~p~n", [Code]),
+      {http_error, Code};
+    {ok, {{StatusLine, _, _}, _, _Body}} ->
+      {http_error, StatusLine};
+    OtherError ->
+      lager:error("Other error: ~p~n", [OtherError]),
+      {http_error, OtherError}
+  catch
+    Exception ->
+      lager:error("Exception error: ~p in call to URL: ~p~n", [Exception, BaseUrl]),
+      {http_error, {exception, Exception}}
+  end.
 
-response_to_binary(Json) when is_list(Json) ->
-    list_to_binary(Json).
-
-get_response_fields(Json) ->
-    {
-        proplists:get_value(<<"multicast_id">>, Json),
-        proplists:get_value(<<"success">>, Json),
-        proplists:get_value(<<"failure">>, Json),
-        proplists:get_value(<<"canonical_ids">>, Json),
-        proplists:get_value(<<"results">>, Json)
-    }.
-
-to_be_parsed(0, 0) -> false;
-to_be_parsed(_Failure, _Canonical) -> true.
+response_to_binary(Json) when is_binary(Json) -> Json;
+response_to_binary(Json) when is_list(Json) -> list_to_binary(Json).
 
 parse_results([Result | Results], [RegId | RegIds], ErrorFun, Message) ->
     case {

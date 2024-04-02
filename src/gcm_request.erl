@@ -29,10 +29,18 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
       OtherError -> OtherError
     end.
 
-send_from_project({ProjectId, RegIds, Message}, {_Key, _ErrorFun}) ->
+send_from_project({ProjectId, RegIds, Message}, {Key, _ErrorFun}) ->
     Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
-    lager:info("FCM Project sending push (dry-run): Url=~p \n Message=~p \n RegIds=~p", [Url, Message, RegIds]),
-    ok.
+    lager:info("[WIP] FCM Project sending push: Url=~p \n Message=~p \n RegIds=~p", [Url, Message, RegIds]),
+    Body = [{<<"registration_ids">>, RegIds}|Message], %% TODO FCM migration part3: Investigate where the payload is being generated
+    Headers = [{"Authorization", string:concat("Bearer ", Key)}],
+
+    case json_post_request(Url, Headers, Body) of
+        {ok, Json} ->
+            lager:info("FCM Project push sent: ~p~n", [Json]);
+        ok;
+        OtherError -> OtherError
+    end.
 
 %%%===================================================================
 %%% Internal functions

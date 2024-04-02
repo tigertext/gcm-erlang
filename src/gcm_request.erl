@@ -63,8 +63,6 @@ json_post_request(BaseUrl, Headers, Body) ->
     {ok, {{_, Code, _}, _, _}} ->
       lager:warn("Unknown error: ~p~n", [Code]),
       {http_error, Code};
-    {ok, {{StatusLine, _, _}, _, _Body}} ->
-      {http_error, StatusLine};
     OtherError ->
       lager:error("Other error: ~p~n", [OtherError]),
       {http_error, OtherError}

@@ -37,7 +37,7 @@ send_from_project({ProjectId, RegIds, Message}, {Key, _ErrorFun}) ->
 
     case json_post_request(Url, Headers, Body) of
         {ok, Json} ->
-            lager:info("FCM Project push sent: ~p~n", [Json]);
+            lager:info("FCM Project push sent: ~p~n", [Json]),
         ok;
         OtherError -> OtherError
     end.

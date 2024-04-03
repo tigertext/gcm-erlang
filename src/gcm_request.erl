@@ -39,7 +39,9 @@ send_from_project({ProjectId, RegIds, Message}, {Key, _ErrorFun}) ->
         {ok, Json} ->
             lager:info("FCM Project push sent: ~p~n", [Json]),
         ok;
-        OtherError -> OtherError
+        OtherError -> 
+          lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
+          OtherError
     end.
 
 %%%===================================================================

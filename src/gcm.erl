@@ -54,8 +54,8 @@ push(Name, RegIds, Message, Message_Id) ->
 push(Name, RegIds, Message) ->
     ok = gen_server:call(Name, {send, RegIds, Message, undefined}).
 
-push_from_project(Name, ProjectId, RegIds, Message) ->
-    ok = gen_server:call(Name, {send_from_project, ProjectId, RegIds, Message}).
+push_from_project(Name, ProjectId, Auth, RegIds, Message) ->
+    ok = gen_server:call(Name, {send_from_project, ProjectId, Auth, RegIds, Message}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -96,8 +96,8 @@ handle_call({send, RegIds, Message, Message_Id}, _From, #state{key=Key, error_fu
     ok = cxy_ctl:execute_task(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]),
     {reply, ok, State};
 
-handle_call({send_from_project, ProjectId, RegIds, Message}, _From, #state{key=Key, error_fun=ErrorFun} = State) ->
-    ok = cxy_ctl:execute_task(gcm, gcm_request, send_from_project, [{ProjectId, RegIds, Message}, {Key, ErrorFun}]),
+handle_call({send_from_project, ProjectId, Auth, RegIds, Message}, _From, #state{key=Key, error_fun=ErrorFun} = State) ->
+    ok = cxy_ctl:execute_task(gcm, gcm_request, send_from_project, [{ProjectId, Auth, RegIds, Message}, {Key, ErrorFun}]),
     {reply, ok, State};
 
 handle_call(_Request, _From, State) ->

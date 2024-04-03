@@ -29,11 +29,11 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
       OtherError -> OtherError
     end.
 
-send_from_project({ProjectId, RegIds, Message}, {Key, _ErrorFun}) ->
+send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, _ErrorFun}) ->
     Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
     lager:info("[WIP] FCM Project sending push: Url=~p \n Message=~p \n RegIds=~p", [Url, Message, RegIds]),
     Body = [{<<"registration_ids">>, RegIds}|Message], %% TODO FCM migration part3: Investigate where the payload is being generated
-    Headers = [{"Authorization", string:concat("Bearer ", Key)}],
+    Headers = [{"Authorization", string:concat("Bearer ", binary_to_list(Auth))}],
 
     case json_post_request(Url, Headers, Body) of
         {ok, Json} ->

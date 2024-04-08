@@ -127,7 +127,7 @@ parse_results([], [], _ErrorFun, _Message) ->
 build_project_url(ProjectId, Method) ->
     ?PROJECT_BASEURL ++ "/v1/projects/" ++ ProjectId ++ "/" ++ Method.
 
-filter(V) when is_binary(V), is_list(V) ->
+filter(V) when is_binary(V) orelse is_list(V) ->
     V;
 filter(V) when is_atom(V) ->
   atom_to_list(V);

@@ -47,12 +47,12 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, _ErrorFun}) ->
                     Priority ->
                         [{<<"priority">>, Priority}]
                 end,
-    Android = [{<<"android">>, {TtlList ++ PriorityList}}],
+    Android = [{<<"android">>, TtlList ++ PriorityList}],
 
     lager:info("[WIP] FCM Project sending push: Url=~p \n Data=~p \n Android=~p \n RegIds=~p", [Url, NewData, Android, RegIds]),
     [
         begin
-            Body =[{<<"message">>, {[{<<"tokens">>, RegId}, {<<"data">>, {NewData}}] ++ Android}}],
+            Body =[{<<"message">>, [{<<"tokens">>, RegId}, {<<"data">>, NewData}] ++ Android}],
             Headers = [{"Authorization", string:concat("Bearer ", binary_to_list(Auth))}],
 
             case json_post_request(Url, Headers, Body) of

@@ -38,7 +38,7 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, _ErrorFun}) ->
             undefined ->
                 [];
             _ ->
-                [{<<"ttl">>, "86400s"}]
+                [{<<"ttl">>, <<"86400s">>}]
         end,
 
     PriorityList = case proplists:get_value(<<"priority">>, Message) of
@@ -127,12 +127,14 @@ parse_results([], [], _ErrorFun, _Message) ->
 build_project_url(ProjectId, Method) ->
     ?PROJECT_BASEURL ++ "/v1/projects/" ++ ProjectId ++ "/" ++ Method.
 
-filter(V) when is_binary(V) orelse is_list(V) ->
+filter(V) when is_binary(V) ->
     V;
+filter(V) when is_list(V) ->
+  list_to_binary(V);
 filter(V) when is_atom(V) ->
-  atom_to_list(V);
+  list_to_binary(atom_to_list(V));
 filter(V) when is_integer(V) ->
-  integer_to_list(V).
+  integer_to_binary(V).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Other possible errors:					%%

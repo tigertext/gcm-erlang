@@ -5,7 +5,7 @@
 
 -define(BASEURL, "https://fcm.googleapis.com/fcm/send").
 -define(PROJECT_BASEURL, "https://fcm.googleapis.com").
--define(PROJECT_SEND_METHOD, "message:send").
+-define(PROJECT_SEND_METHOD, "messages:send").
 -define(TIMEOUT, 6000). %% 6 seconds
 -define(CONNECT_TIMEOUT, 3000). %% 3 seconds
 
@@ -52,7 +52,7 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, _ErrorFun}) ->
     lager:info("[WIP] FCM Project sending push: Url=~p \n Data=~p \n Android=~p \n RegIds=~p", [Url, NewData, Android, RegIds]),
     [
         begin
-            Body =[{<<"message">>, [{<<"tokens">>, RegId}, {<<"data">>, NewData}] ++ Android}],
+            Body =[{<<"message">>, [{<<"token">>, RegId}, {<<"data">>, NewData}] ++ Android}],
             Headers = [{"Authorization", string:concat("Bearer ", binary_to_list(Auth))}],
 
             case json_post_request(Url, Headers, Body) of

@@ -45,7 +45,7 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, _ErrorFun}) ->
                     undefined ->
                         [];
                     Priority ->
-                        {<<"priority">>, Priority}
+                        [{<<"priority">>, Priority}]
                 end,
     Android = [{<<"android">>, {TtlList ++ PriorityList}}],
 

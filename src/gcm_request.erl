@@ -5,7 +5,7 @@
 
 -define(BASEURL, "https://fcm.googleapis.com/fcm/send").
 -define(PROJECT_BASEURL, "https://fcm.googleapis.com").
--define(PROJECT_SEND_METHOD, "message:send").
+-define(PROJECT_SEND_METHOD, "messages:send").
 -define(TIMEOUT, 6000). %% 6 seconds
 -define(CONNECT_TIMEOUT, 3000). %% 3 seconds
 
@@ -29,10 +29,41 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
       OtherError -> OtherError
     end.
 
-send_from_project({ProjectId, RegIds, Message}, {_Key, _ErrorFun}) ->
+send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, _ErrorFun}) ->
     Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
-    lager:info("FCM Project sending push (dry-run): Url=~p \n Message=~p \n RegIds=~p", [Url, Message, RegIds]),
-    ok.
+    Data = proplists:get_value(<<"data">>, Message),
+    NewData = [{K, filter(V)} || {K, V} <- Data],
+    TtlList =
+        case proplists:get_value(<<"time_to_live">>, Message) of
+            undefined ->
+                [];
+            _ ->
+                [{<<"ttl">>, <<"86400s">>}]
+        end,
+
+    PriorityList = case proplists:get_value(<<"priority">>, Message) of
+                    undefined ->
+                        [];
+                    Priority ->
+                        [{<<"priority">>, Priority}]
+                end,
+    Android = [{<<"android">>, TtlList ++ PriorityList}],
+
+    lager:info("[WIP] FCM Project sending push: Url=~p \n Data=~p \n Android=~p \n RegIds=~p", [Url, NewData, Android, RegIds]),
+    [
+        begin
+            Body =[{<<"message">>, [{<<"token">>, RegId}, {<<"data">>, NewData}] ++ Android}],
+            Headers = [{"Authorization", string:concat("Bearer ", binary_to_list(Auth))}],
+
+            case json_post_request(Url, Headers, Body) of
+                {ok, Json} ->
+                    lager:info("FCM Project push sent: ~p~n", [Json]),
+                    ok;
+                OtherError ->
+                    lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
+                    OtherError
+            end
+        end || RegId <- RegIds].
 
 %%%===================================================================
 %%% Internal functions
@@ -55,8 +86,6 @@ json_post_request(BaseUrl, Headers, Body) ->
     {ok, {{_, Code, _}, _, _}} ->
       lager:warn("Unknown error: ~p~n", [Code]),
       {http_error, Code};
-    {ok, {{StatusLine, _, _}, _, _Body}} ->
-      {http_error, StatusLine};
     OtherError ->
       lager:error("Other error: ~p~n", [OtherError]),
       {http_error, OtherError}
@@ -97,6 +126,15 @@ parse_results([], [], _ErrorFun, _Message) ->
 
 build_project_url(ProjectId, Method) ->
     ?PROJECT_BASEURL ++ "/v1/projects/" ++ ProjectId ++ "/" ++ Method.
+
+filter(V) when is_binary(V) ->
+    V;
+filter(V) when is_list(V) ->
+  list_to_binary(V);
+filter(V) when is_atom(V) ->
+  list_to_binary(atom_to_list(V));
+filter(V) when is_integer(V) ->
+  integer_to_binary(V).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Other possible errors:					%%

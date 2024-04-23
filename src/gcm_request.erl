@@ -29,7 +29,7 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
       OtherError -> OtherError
     end.
 
-send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, _ErrorFun}) ->
+send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
     Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
     Data = proplists:get_value(<<"data">>, Message),
     NewData = [{K, filter(V)} || {K, V} <- Data],

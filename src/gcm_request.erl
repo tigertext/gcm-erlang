@@ -87,10 +87,10 @@ json_post_request(BaseUrl, Headers, Body) ->
       lager:error("Server error: ~p~n", [Code]),
       {http_error, Code};
     {ok, {{_, Code, _}, _, _}} when Code >= 400 andalso Code =< 499 ->
-      lager:warn("Client error: ~p~n", [Code]),
+      lager:warning("Client error: ~p~n", [Code]),
       {http_error, Code};
     {ok, {{_, Code, _}, _, _}} ->
-      lager:warn("Unknown error: ~p~n", [Code]),
+      lager:warning("Unknown error: ~p~n", [Code]),
       {http_error, Code};
     OtherError ->
       lager:error("Other error: ~p~n", [OtherError]),

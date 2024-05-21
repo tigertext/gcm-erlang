@@ -32,7 +32,7 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
 send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
     Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
     Data = proplists:get_value(<<"data">>, Message),
-    NewData = [{K, filter(V)} || {K, V} <- Data],
+    NewData = [{K, try filter(V) catch _:_ -> V end} || {K, V} <- Data],
     TtlList =
         case proplists:get_value(<<"time_to_live">>, Message) of
             undefined ->

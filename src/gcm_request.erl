@@ -30,9 +30,10 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
     end.
 
 send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
-    Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
+  lager:info("Message=~p; RegIds=~p~n", [Message, RegIds]),  
+  Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
     Data = proplists:get_value(<<"data">>, Message),
-    NewData = [{K, try filter(V) catch _:_ -> V end} || {K, V} <- Data],
+    NewData = [{K, try filter(V) catch _:_ -> map_to_binary(V) end} || {K, V} <- Data],
     TtlList =
         case proplists:get_value(<<"time_to_live">>, Message) of
             undefined ->
@@ -61,7 +62,8 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
                     ok;
                 {http_error, Code} = OtherError when Code >= 400 andalso Code =< 499 ->
                     lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
-                    ErrorFun(<<"InvalidRegistration">>, RegId, Message);
+                    ok;
+                    %ErrorFun(<<"InvalidRegistration">>, RegId, Message);
                 {http_error, Code} = OtherError when Code >= 500 andalso Code =< 599 ->
                     lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
                     ErrorFun(<<"Unavailable">>, RegId, Message);
@@ -86,8 +88,8 @@ json_post_request(BaseUrl, Headers, Body) ->
     {ok, {{_, Code, _}, _, _}} when Code >= 500 andalso Code =< 599 ->
       lager:error("Server error: ~p~n", [Code]),
       {http_error, Code};
-    {ok, {{_, Code, _}, _, _}} when Code >= 400 andalso Code =< 499 ->
-      lager:warning("Client error: ~p~n", [Code]),
+    {ok, {{_, Code, _}, _, Response}} when Code >= 400 andalso Code =< 499 ->
+      lager:warning("Client error: ~p; Response: ~p~n", [Code, Response]),
       {http_error, Code};
     {ok, {{_, Code, _}, _, _}} ->
       lager:warning("Unknown error: ~p~n", [Code]),
@@ -141,6 +143,16 @@ filter(V) when is_atom(V) ->
   list_to_binary(atom_to_list(V));
 filter(V) when is_integer(V) ->
   integer_to_binary(V).
+
+map_to_binary(Map) when is_map(Map) ->
+    maps:from_list([{K, map_to_binary(V)} || {K, V} <- maps:to_list(Map)]);
+map_to_binary(List) when is_list(List) ->
+    [map_to_binary(Elem) || Elem <- List];
+map_to_binary(Other) ->
+    case is_binary(Other) of
+        true -> Other;
+        false -> filter(Other)
+    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Other possible errors:					%%

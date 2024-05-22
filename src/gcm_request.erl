@@ -3,6 +3,9 @@
 %% API
 -export([send/2, send_from_project/2]).
 
+%% test
+-export([json_post_request/3, filter/1]).
+
 -define(BASEURL, "https://fcm.googleapis.com/fcm/send").
 -define(PROJECT_BASEURL, "https://fcm.googleapis.com").
 -define(PROJECT_SEND_METHOD, "messages:send").
@@ -137,11 +140,17 @@ build_project_url(ProjectId, Method) ->
 filter(V) when is_binary(V) ->
     V;
 filter(V) when is_list(V) ->
-    list_to_binary(V);
+    try 
+        list_to_binary(V)
+    catch
+        _:_ -> <<"">>
+    end;
 filter(V) when is_atom(V) ->
     list_to_binary(atom_to_list(V));
 filter(V) when is_integer(V) ->
     integer_to_binary(V);
+filter(V) when is_map(V) ->
+    maps:map(fun(_K,V1)->filter(V1)end, V);
 filter(V) ->
     <<"">>.
 

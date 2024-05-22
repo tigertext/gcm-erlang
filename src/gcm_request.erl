@@ -32,7 +32,7 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
 send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
     Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
     Data = proplists:get_value(<<"data">>, Message),
-    NewData = [{K, try filter(V) catch _:_ -> V end} || {K, V} <- Data],
+    NewData = [{filter(K), filter(V)} || {K, V} <- Data],
     TtlList =
         case proplists:get_value(<<"time_to_live">>, Message) of
             undefined ->
@@ -136,11 +136,13 @@ build_project_url(ProjectId, Method) ->
 filter(V) when is_binary(V) ->
     V;
 filter(V) when is_list(V) ->
-  list_to_binary(V);
+    list_to_binary(V);
 filter(V) when is_atom(V) ->
-  list_to_binary(atom_to_list(V));
+    list_to_binary(atom_to_list(V));
 filter(V) when is_integer(V) ->
-  integer_to_binary(V).
+    integer_to_binary(V);
+filter(V) ->
+    <<"">>.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Other possible errors:					%%

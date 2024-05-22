@@ -61,7 +61,8 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
                     ok;
                 {http_error, Code} = OtherError when Code >= 400 andalso Code =< 499 ->
                     lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
-                    ErrorFun(<<"InvalidRegistration">>, RegId, Message);
+                    OK;
+                    %ErrorFun(<<"InvalidRegistration">>, RegId, Message);
                 {http_error, Code} = OtherError when Code >= 500 andalso Code =< 599 ->
                     lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
                     ErrorFun(<<"Unavailable">>, RegId, Message);

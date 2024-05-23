@@ -143,7 +143,8 @@ filter(V) when is_list(V) ->
     try 
         list_to_binary(V)
     catch
-        _:_ -> <<"">>
+        _:_ -> 
+            jsx:encode(V)
     end;
 filter(V) when is_atom(V) ->
     list_to_binary(atom_to_list(V));
@@ -151,7 +152,7 @@ filter(V) when is_integer(V) ->
     integer_to_binary(V);
 filter(V) when is_map(V) ->
     maps:map(fun(_K,V1)->filter(V1)end, V);
-filter(V) ->
+filter(_V) ->
     <<"">>.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

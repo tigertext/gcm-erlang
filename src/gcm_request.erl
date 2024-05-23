@@ -143,7 +143,8 @@ filter(V) when is_list(V) ->
     try 
         list_to_binary(V)
     catch
-        _:_ -> <<"">>
+        _:_ -> 
+            jsx:encode(V)
     end;
 filter(V) when is_atom(V) ->
     list_to_binary(atom_to_list(V));

@@ -152,7 +152,7 @@ filter(V) when is_integer(V) ->
     integer_to_binary(V);
 filter(V) when is_map(V) ->
     maps:map(fun(_K,V1)->filter(V1)end, V);
-filter(V) ->
+filter(_V) ->
     <<"">>.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

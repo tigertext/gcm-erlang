@@ -13,67 +13,77 @@
 -define(CONNECT_TIMEOUT, 3000). %% 3 seconds
 
 send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
-    lager:info("Message=~p; RegIds=~p~n", [Message, RegIds]),
-    Body = [{<<"registration_ids">>, RegIds}|Message],
-    Headers = [{"Authorization", string:concat("key=", Key)}],
+    try
+        lager:info("Message=~p; RegIds=~p~n", [Message, RegIds]),
+        Body = [{<<"registration_ids">>, RegIds}|Message],
+        Headers = [{"Authorization", string:concat("key=", Key)}],
 
-    case json_post_request(?BASEURL, Headers, Body) of
-      {ok, Json} ->
-        Multicast = proplists:get_value(<<"multicast_id">>, Json),
-        Success = proplists:get_value(<<"success">>, Json),
-        Failure = proplists:get_value(<<"failure">>, Json),
-        Canonical = proplists:get_value(<<"canonical_ids">>, Json),
-        Results = proplists:get_value(<<"results">>, Json),
-        Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), message_id=~p,  multicast id=~p~n", [RegIds, Message_Id, Multicast]),
-        case {Failure, Canonical} of
-            {0, 0} -> false;
-            {_Any, _Any} -> parse_results(Results, RegIds, ErrorFun, Message)
-        end;
-      OtherError -> OtherError
-    end.
+        case json_post_request(?BASEURL, Headers, Body) of
+        {ok, Json} ->
+            Multicast = proplists:get_value(<<"multicast_id">>, Json),
+            Success = proplists:get_value(<<"success">>, Json),
+            Failure = proplists:get_value(<<"failure">>, Json),
+            Canonical = proplists:get_value(<<"canonical_ids">>, Json),
+            Results = proplists:get_value(<<"results">>, Json),
+            Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), message_id=~p,  multicast id=~p~n", [RegIds, Message_Id, Multicast]),
+            case {Failure, Canonical} of
+                {0, 0} -> false;
+                {_Any, _Any} -> parse_results(Results, RegIds, ErrorFun, Message)
+            end;
+        OtherError -> OtherError
+        end
+    catch
+        Error:Reason:StackTrace ->
+            lager:error("Unexcepted exception, ~p:~p, function:~p, stack:~p", [Error, Reason, ?FUNCTION_NAME, StackTrace])
+        end.
 
 send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
-    Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
-    Data = proplists:get_value(<<"data">>, Message),
-    NewData = [{filter(K), filter(V)} || {K, V} <- Data],
-    TtlList =
-        case proplists:get_value(<<"time_to_live">>, Message) of
-            undefined ->
-                [];
-            _ ->
-                [{<<"ttl">>, <<"86400s">>}]
-        end,
+    try
+        Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
+        Data = proplists:get_value(<<"data">>, Message),
+        NewData = [{filter(K), filter(V)} || {K, V} <- Data],
+        TtlList =
+            case proplists:get_value(<<"time_to_live">>, Message) of
+                undefined ->
+                    [];
+                _ ->
+                    [{<<"ttl">>, <<"86400s">>}]
+            end,
 
-    PriorityList = case proplists:get_value(<<"priority">>, Message) of
-                    undefined ->
-                        [];
-                    Priority ->
-                        [{<<"priority">>, Priority}]
-                end,
-    Android = [{<<"android">>, TtlList ++ PriorityList}],
+        PriorityList = case proplists:get_value(<<"priority">>, Message) of
+                        undefined ->
+                            [];
+                        Priority ->
+                            [{<<"priority">>, Priority}]
+                    end,
+        Android = [{<<"android">>, TtlList ++ PriorityList}],
 
-    lager:info("[WIP] FCM Project sending push: Url=~p \n Data=~p \n Android=~p \n RegIds=~p", [Url, NewData, Android, RegIds]),
-    [
-        begin
-            Body =[{<<"message">>, [{<<"token">>, RegId}, {<<"data">>, NewData}] ++ Android}],
-            Headers = [{"Authorization", string:concat("Bearer ", binary_to_list(Auth))}],
+        lager:info("[WIP] FCM Project sending push: Url=~p \n Data=~p \n Android=~p \n RegIds=~p", [Url, NewData, Android, RegIds]),
+        [
+            begin
+                Body =[{<<"message">>, [{<<"token">>, RegId}, {<<"data">>, NewData}] ++ Android}],
+                Headers = [{"Authorization", string:concat("Bearer ", binary_to_list(Auth))}],
 
-            case json_post_request(Url, Headers, Body) of
-                {ok, Json} ->
-                    lager:info("FCM Project push sent: ~p~n", [Json]),
-                    ok;
-                {http_error, Code} = OtherError when Code >= 400 andalso Code =< 499 ->
-                    lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
-                    ok;
-                    %ErrorFun(<<"InvalidRegistration">>, RegId, Message);
-                {http_error, Code} = OtherError when Code >= 500 andalso Code =< 599 ->
-                    lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
-                    ErrorFun(<<"Unavailable">>, RegId, Message);
-                OtherError ->
-                    lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
-                    OtherError
-            end
-        end || RegId <- RegIds].
+                case json_post_request(Url, Headers, Body) of
+                    {ok, Json} ->
+                        lager:info("FCM Project push sent: ~p~n", [Json]),
+                        ok;
+                    {http_error, Code} = OtherError when Code >= 400 andalso Code =< 499 ->
+                        lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
+                        ok;
+                        %ErrorFun(<<"InvalidRegistration">>, RegId, Message);
+                    {http_error, Code} = OtherError when Code >= 500 andalso Code =< 599 ->
+                        lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
+                        ErrorFun(<<"Unavailable">>, RegId, Message);
+                    OtherError ->
+                        lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
+                        OtherError
+                end
+            end || RegId <- RegIds]
+    catch
+        Error:Reason:StackTrace ->
+            lager:error("Unexcepted exception, ~p:~p, function:~p, stack:~p", [Error, Reason, ?FUNCTION_NAME, StackTrace])
+        end.
 
 %%%===================================================================
 %%% Internal functions

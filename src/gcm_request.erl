@@ -28,7 +28,7 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
             Success =:= 1 andalso lager:info("Push sent success(RegIds=~p), message_id=~p,  multicast id=~p~n", [RegIds, Message_Id, Multicast]),
             case {Failure, Canonical} of
                 {0, 0} -> false;
-                {_Any, _Any} -> parse_results(Results, RegIds, ErrorFun, Message)
+                {_, _} -> parse_results(Results, RegIds, ErrorFun, Message)
             end;
         OtherError -> OtherError
         end

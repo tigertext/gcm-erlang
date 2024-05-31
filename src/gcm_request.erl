@@ -68,10 +68,13 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
                     {ok, Json} ->
                         lager:info("FCM Project push sent: ~p~n", [Json]),
                         ok;
+                    {http_error, 404} = OtherError ->
+                        lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
+                        ErrorFun(<<"InvalidRegistration">>, RegId, Message),
+                        ok;
                     {http_error, Code} = OtherError when Code >= 400 andalso Code =< 499 ->
                         lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
                         ok;
-                        %ErrorFun(<<"InvalidRegistration">>, RegId, Message);
                     {http_error, Code} = OtherError when Code >= 500 andalso Code =< 599 ->
                         lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
                         ErrorFun(<<"Unavailable">>, RegId, Message);
@@ -97,14 +100,14 @@ json_post_request(BaseUrl, Headers, Body) ->
       {error, Reason};
     {ok, {{_, 200, _}, _Headers, Response}} ->
       {ok, jsx:decode(response_to_binary(Response))};
-    {ok, {{_, Code, _}, _, _}} when Code >= 500 andalso Code =< 599 ->
-      lager:error("Server error: ~p~n", [Code]),
+    {ok, {{_, Code, _}, _, Response}} when Code >= 500 andalso Code =< 599 ->
+      lager:error("Server error: ~p;Response:~p~n", [Code, Response]),
       {http_error, Code};
-    {ok, {{_, Code, _}, _, _}} when Code >= 400 andalso Code =< 499 ->
-      lager:warning("Client error: ~p~n", [Code]),
+    {ok, {{_, Code, _}, _, Response}} when Code >= 400 andalso Code =< 499 ->
+      lager:warning("Client error: ~p;Response:~p~n", [Code, Response]),
       {http_error, Code};
-    {ok, {{_, Code, _}, _, _}} ->
-      lager:warning("Unknown error: ~p~n", [Code]),
+    {ok, {{_, Code, _}, _, Response}} ->
+      lager:warning("Unknown error: ~p;Response:~p~n", [Code, Response]),
       {http_error, Code};
     OtherError ->
       lager:error("Other error: ~p~n", [OtherError]),

@@ -42,6 +42,9 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
         Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
         Data = proplists:get_value(<<"data">>, Message),
         NewData = [{filter(K), filter(V)} || {K, V} <- Data],
+        SenderId = proplists:get_value(<<"sender_id">>, Message)
+        ReceiverId = proplists:get_value(<<"receiver_id">>, Message)
+        ResourceId = proplists:get_value(<<"resource_id">>, Message)
         TtlList =
             case proplists:get_value(<<"time_to_live">>, Message) of
                 undefined ->
@@ -66,26 +69,26 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
 
                 case json_post_request(Url, Headers, Body) of
                     {ok, Json} ->
-                        lager:info("FCM Project push sent: ~p~n", [Json]),
+                        lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}],"FCM Project push sent: ~p~n", [Json]),
                         ok;
                     {http_error, 404} = OtherError ->
-                        lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
+                        lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}], "FCM Project push sent failed: ~p~n", [OtherError]),
                         ErrorFun(<<"InvalidRegistration">>, RegId, Message),
                         ok;
                     {http_error, Code} = OtherError when Code >= 400 andalso Code =< 499 ->
-                        lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
+                        lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}], "FCM Project push sent failed: ~p~n", [OtherError]),
                         ok;
                     {http_error, Code} = OtherError when Code >= 500 andalso Code =< 599 ->
-                        lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
+                        lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}], "FCM Project push sent failed: ~p~n", [OtherError]),
                         ErrorFun(<<"Unavailable">>, RegId, Message);
                     OtherError ->
-                        lager:info("FCM Project push sent failed: ~p~n", [OtherError]),
+                        lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}], "FCM Project push sent failed: ~p~n", [OtherError]),
                         OtherError
                 end
             end || RegId <- RegIds]
     catch
         Error:Reason:StackTrace ->
-            lager:error("Unexcepted exception, ~p:~p, function:~p, stack:~p", [Error, Reason, ?FUNCTION_NAME, StackTrace])
+            lager:error([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}], "Unexcepted exception, ~p:~p, function:~p, stack:~p", [Error, Reason, ?FUNCTION_NAME, StackTrace])
         end.
 
 %%%===================================================================

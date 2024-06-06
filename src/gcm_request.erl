@@ -42,9 +42,9 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
         Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
         Data = proplists:get_value(<<"data">>, Message),
         NewData = [{filter(K), filter(V)} || {K, V} <- Data],
-        SenderId = proplists:get_value(<<"sender_id">>, Message)
-        ReceiverId = proplists:get_value(<<"receiver_id">>, Message)
-        ResourceId = proplists:get_value(<<"resource_id">>, Message)
+        SenderId = proplists:get_value(<<"sender_id">>, Message),
+        ReceiverId = proplists:get_value(<<"receiver_id">>, Message),
+        ResourceId = proplists:get_value(<<"resource_id">>, Message),
         TtlList =
             case proplists:get_value(<<"time_to_live">>, Message) of
                 undefined ->

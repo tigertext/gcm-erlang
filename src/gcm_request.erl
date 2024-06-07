@@ -69,7 +69,8 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
 
                 case json_post_request(Url, Headers, Body) of
                     {ok, Json} ->
-                        lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}],"FCM Project push sent: ~p~n", [Json]),
+                        lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}, {status_code, 200}],
+                                   "FCM Project push sent: ~p~n", [Json]),
                         ok;
                     {http_error, 404} = OtherError ->
                         lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}, {status_code, 404}], 

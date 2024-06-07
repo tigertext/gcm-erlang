@@ -38,12 +38,12 @@ send({RegIds, Message, Message_Id}, {Key, ErrorFun}) ->
         end.
 
 send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
-    SenderId = proplists:get_value(<<"sender_id">>, Message),
-    ReceiverId = proplists:get_value(<<"receiver_id">>, Message),
-    ResourceId = proplists:get_value(<<"resource_id">>, Message),
+    Data = proplists:get_value(<<"data">>, Message),
+    SenderId = proplists:get_value(<<"sender_id">>, Data),
+    ReceiverId = proplists:get_value(<<"receiver_id">>, Data),
+    ResourceId = proplists:get_value(<<"resource_id">>, Data),
     try
         Url = build_project_url(ProjectId, ?PROJECT_SEND_METHOD),
-        Data = proplists:get_value(<<"data">>, Message),
         NewData = [{filter(K), filter(V)} || {K, V} <- Data],
         TtlList =
             case proplists:get_value(<<"time_to_live">>, Message) of

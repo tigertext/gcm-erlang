@@ -75,7 +75,7 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
                     {http_error, 404} = OtherError ->
                         lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}, {status_code, 404}], 
                                     "FCM Project push sent failed: ~p~n", [OtherError]),
-                        ErrorFun(<<"InvalidRegistration">>, RegId, Message),
+                        ErrorFun(<<"InvalidRegistration">>, RegId),
                         ok;
                     {http_error, Code} = OtherError when Code >= 400 andalso Code =< 499 ->
                         lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}, {status_code, Code}], 
@@ -84,7 +84,7 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
                     {http_error, Code} = OtherError when Code >= 500 andalso Code =< 599 ->
                         lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}, {status_code, Code}], 
                                    "FCM Project push sent failed: ~p~n", [OtherError]),
-                        ErrorFun(<<"Unavailable">>, RegId, Message);
+                        ErrorFun(<<"Unavailable">>, RegId);
                     OtherError ->
                         lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}], 
                                    "FCM Project push sent failed: ~p~n", [OtherError]),

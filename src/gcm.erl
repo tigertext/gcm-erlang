@@ -97,7 +97,7 @@ handle_call({send, RegIds, Message, Message_Id}, _From, #state{key=Key, error_fu
     {reply, ok, State};
 
 handle_call({send_from_project, ProjectId, Auth, RegIds, Message}, _From, #state{key=Key, error_fun=ErrorFun} = State) ->
-    case config:get_env(fcm_concurrent, false) of
+    case config:get_env(fcm_concurrent, true) of
         true ->
             ok = cxy_ctl:execute_task(gcm, gcm_request, send_from_project, [{ProjectId, Auth, RegIds, Message}, {Key, ErrorFun}]),
             {reply, ok, State};

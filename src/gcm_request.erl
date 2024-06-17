@@ -80,7 +80,7 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
                     {http_error, Code} = OtherError when Code >= 400 andalso Code =< 499 ->
                         lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}, {status_code, Code}], 
                                      "FCM Project push sent failed: ~p~n", [OtherError]),
-                        error;
+                        ok;
                     {http_error, Code} = OtherError when Code >= 500 andalso Code =< 599 ->
                         lager:info([{sender_id, SenderId}, {account_token, ReceiverId}, {resource_token, ResourceId}, {status_code, Code}], 
                                    "FCM Project push sent failed: ~p~n", [OtherError]),

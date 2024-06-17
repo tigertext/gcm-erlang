@@ -54,8 +54,8 @@ push(Name, RegIds, Message, Message_Id) ->
 push(Name, RegIds, Message) ->
     ok = gen_server:call(Name, {send, RegIds, Message, undefined}).
 
-push_from_project(Name, ProjectId, Auth, RegIds, Message) ->
-    ok = gen_server:call(Name, {send_from_project, ProjectId, Auth, RegIds, Message}).
+push_from_project(Name, ProjectId, Auth, RegIds, Message, FcmConcurrent) ->
+    ok = gen_server:call(Name, {send_from_project, ProjectId, Auth, RegIds, Message, FcmConcurrent}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -96,15 +96,13 @@ handle_call({send, RegIds, Message, Message_Id}, _From, #state{key=Key, error_fu
     ok = cxy_ctl:execute_task(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]),
     {reply, ok, State};
 
-handle_call({send_from_project, ProjectId, Auth, RegIds, Message}, _From, #state{key=Key, error_fun=ErrorFun} = State) ->
-    case config:get_env(fcm_concurrent, true) of
-        true ->
-            ok = cxy_ctl:execute_task(gcm, gcm_request, send_from_project, [{ProjectId, Auth, RegIds, Message}, {Key, ErrorFun}]),
-            {reply, ok, State};
-        false ->
-            Response = gcm_request:send_from_project({ProjectId, Auth, RegIds, Message}, {Key, ErrorFun}),
-            {reply, Response, State}
-    end;
+handle_call({send_from_project, ProjectId, Auth, RegIds, Message, true}, _From, #state{key=Key, error_fun=ErrorFun} = State) ->
+    ok = cxy_ctl:execute_task(gcm, gcm_request, send_from_project, [{ProjectId, Auth, RegIds, Message}, {Key, ErrorFun}]),
+    {reply, ok, State};
+
+handle_call({send_from_project, ProjectId, Auth, RegIds, Message, _}, _From, #state{key=Key, error_fun=ErrorFun} = State) ->
+    Response = gcm_request:send_from_project({ProjectId, Auth, RegIds, Message}, {Key, ErrorFun}),
+    {reply, Response, State};
 
 handle_call(_Request, _From, State) ->
     Reply = ok,

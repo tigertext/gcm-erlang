@@ -55,7 +55,7 @@ push(Name, RegIds, Message) ->
     ok = gen_server:call(Name, {send, RegIds, Message, undefined}).
 
 push_from_project(Name, ProjectId, Auth, RegIds, Message, FcmConcurrent) ->
-    ok = gen_server:call(Name, {send_from_project, ProjectId, Auth, RegIds, Message, FcmConcurrent}).
+    gen_server:call(Name, {send_from_project, ProjectId, Auth, RegIds, Message, FcmConcurrent}).
 
 %%%===================================================================
 %%% gen_server callbacks

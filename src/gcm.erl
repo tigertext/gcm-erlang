@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start/2, start/3, stop/1, start_link/2, start_link/3, push/3, push/4, push_from_project/5]).
+-export([start/2, start/3, stop/1, start_link/2, start_link/3, push/3, push/4, push_from_project/6]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -54,8 +54,8 @@ push(Name, RegIds, Message, Message_Id) ->
 push(Name, RegIds, Message) ->
     ok = gen_server:call(Name, {send, RegIds, Message, undefined}).
 
-push_from_project(Name, ProjectId, Auth, RegIds, Message) ->
-    ok = gen_server:call(Name, {send_from_project, ProjectId, Auth, RegIds, Message}).
+push_from_project(Name, ProjectId, Auth, RegIds, Message, FcmConcurrent) ->
+    gen_server:call(Name, {send_from_project, ProjectId, Auth, RegIds, Message, FcmConcurrent}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -96,9 +96,13 @@ handle_call({send, RegIds, Message, Message_Id}, _From, #state{key=Key, error_fu
     ok = cxy_ctl:execute_task(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]),
     {reply, ok, State};
 
-handle_call({send_from_project, ProjectId, Auth, RegIds, Message}, _From, #state{key=Key, error_fun=ErrorFun} = State) ->
+handle_call({send_from_project, ProjectId, Auth, RegIds, Message, true}, _From, #state{key=Key, error_fun=ErrorFun} = State) ->
     ok = cxy_ctl:execute_task(gcm, gcm_request, send_from_project, [{ProjectId, Auth, RegIds, Message}, {Key, ErrorFun}]),
     {reply, ok, State};
+
+handle_call({send_from_project, ProjectId, Auth, RegIds, Message, _}, _From, #state{key=Key, error_fun=ErrorFun} = State) ->
+    Response = gcm_request:send_from_project({ProjectId, Auth, RegIds, Message}, {Key, ErrorFun}),
+    {reply, Response, State};
 
 handle_call(_Request, _From, State) ->
     Reply = ok,

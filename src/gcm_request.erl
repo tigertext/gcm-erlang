@@ -9,6 +9,7 @@
 -define(BASEURL, "https://fcm.googleapis.com/fcm/send").
 -define(PROJECT_BASEURL, "https://fcm.googleapis.com").
 -define(PROJECT_SEND_METHOD, "messages:send").
+-define(ANALYTICS_LABEL, "gcm_erlang_messages_send").
 -define(TIMEOUT, 6000). %% 6 seconds
 -define(CONNECT_TIMEOUT, 3000). %% 3 seconds
 
@@ -177,6 +178,20 @@ filter(V) when is_map(V) ->
     maps:map(fun(_K,V1)->filter(V1)end, V);
 filter(_V) ->
     <<"">>.
+
+-spec build_analytics_label(binary() | list(), binary()) -> binary().
+build_analytics_label(MsgType, Prefix) when is_list(MsgType) ->
+    build_analytics_label(list_to_binary(MsgType), Prefix);
+build_analytics_label(MsgType, Prefix) when is_binary(MsgType), is_binary(Prefix) ->
+    Label = <<Prefix/binary, "%", MsgType/binary>>,
+    [{<<"analytics_label">>, Label}].
+
+-spec get_msg_type(list()) -> binary() | list().
+get_msg_type(Message) when is_list(Message) ->
+    case proplists:get_value(<<"type">>, Message, proplists:get_value(<<"msg_type">>, Message)) of
+        undefined -> <<"undefined">>;
+        Type -> Type
+    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Other possible errors:					%%

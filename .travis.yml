@@ -3,7 +3,5 @@ script:
 - "export DEBUG=1"
 - "./rebar3 compile"
 - "./rebar3 skip_deps=true eunit"
-notifications:
-  email: paolo.dincau@gmail.com
 otp_release:
     - 22.2

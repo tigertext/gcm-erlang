@@ -5,11 +5,12 @@
 
 %% test
 -export([json_post_request/3, filter/1]).
+-export([build_analytics_label/2, get_msg_type/1]).
 
 -define(BASEURL, "https://fcm.googleapis.com/fcm/send").
 -define(PROJECT_BASEURL, "https://fcm.googleapis.com").
 -define(PROJECT_SEND_METHOD, "messages:send").
--define(ANALYTICS_LABEL, "gcm_erlang_messages_send").
+-define(ANALYTICS_LABEL, "gcm_erl_send").
 -define(TIMEOUT, 6000). %% 6 seconds
 -define(CONNECT_TIMEOUT, 3000). %% 3 seconds
 
@@ -60,7 +61,8 @@ send_from_project({ProjectId, Auth, RegIds, Message}, {_Key, ErrorFun}) ->
                         Priority ->
                             [{<<"priority">>, Priority}]
                     end,
-        Android = [{<<"android">>, TtlList ++ PriorityList}],
+        AnalyticsLabel = build_analytics_label(get_msg_type(Message), ?ANALYTICS_LABEL),
+        Android = [{<<"android">>, TtlList ++ PriorityList ++ AnalyticsLabel}],
 
         lager:info("[WIP] FCM Project sending push: Url=~p \n Data=~p \n Android=~p \n RegIds=~p", [Url, NewData, Android, RegIds]),
         [

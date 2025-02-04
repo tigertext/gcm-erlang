@@ -2,3 +2,6 @@ deps/
 .eunit
 ebin/
 .beam
+_build
+*.beam
+

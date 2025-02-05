@@ -1,6 +1,12 @@
+sudo: false
+dist: jammy
+
 language: erlang
+otp_release:
+- 22.2
 
 before_script:
+- kerl list installations
 - echo "'127.0.0.1'." > ~/.hosts.erlang
 - rm -rf rebar3
 - git clone --branch 3.13.2 git@github.com:erlang/rebar3.git
@@ -13,5 +19,6 @@ script:
 - "export DEBUG=1"
 - "./rebar3/rebar3 compile"
 - "./rebar3/rebar3 skip_deps=true eunit"
-otp_release:
-    - 22.2
+
+notifications:
+  email: false

@@ -15,7 +15,7 @@ before_script:
 script:
 - "export DEBUG=1"
 - "./rebar3/rebar3 compile"
-- "./rebar3/rebar3 skip_deps=true eunit"
+- "./rebar3/rebar3 eunit"
 
 notifications:
   email: false

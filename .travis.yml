@@ -6,7 +6,7 @@ before_script:
 - kerl list installations
 - echo "'127.0.0.1'." > ~/.hosts.erlang
 - rm -rf rebar3
-- git clone --branch 3.13.2 git@github.com:erlang/rebar3.git
+- git clone --branch 3.13.2 https://github.com/erlang/rebar3.git
 - cd rebar3 && ./bootstrap
 - ./rebar3 local install && export PATH=~/.cache/rebar3/bin:$PATH
 - echo "which rebar3 " && which rebar3

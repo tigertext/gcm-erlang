@@ -1,7 +1,17 @@
 language: erlang
+
+before_script:
+- echo "'127.0.0.1'." > ~/.hosts.erlang
+- rm -rf rebar3
+- git clone --branch 3.13.2 git@github.com:erlang/rebar3.git
+- cd rebar3 && ./bootstrap
+- ./rebar3 local install && export PATH=~/.cache/rebar3/bin:$PATH
+- echo "which rebar3 " && which rebar3
+- cd ..
+
 script:
 - "export DEBUG=1"
-- "./rebar3 compile"
-- "./rebar3 skip_deps=true eunit"
+- "./rebar3/rebar3 compile"
+- "./rebar3/rebar3 skip_deps=true eunit"
 otp_release:
     - 22.2

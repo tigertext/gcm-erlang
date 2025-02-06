@@ -1,9 +1,5 @@
 {"1.1.0",
-[{<<"epocxy">>,
-  {git,"https://github.com/tigertext/epocxy.git",
-       {ref,"2bdb22deccc64757a978656d2edb070c2e7d1510"}},
-  0},
- {<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.9">>},1},
+[{<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.9">>},1},
  {<<"jsx">>,{pkg,<<"jsx">>,<<"2.8.3">>},0},
  {<<"lager">>,{pkg,<<"lager">>,<<"3.8.0">>},0},
  {<<"meck">>,{pkg,<<"meck">>,<<"0.9.2">>},0}]}.

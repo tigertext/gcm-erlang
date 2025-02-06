@@ -1,6 +1,20 @@
 language: erlang
-script: "./rebar3 compile && ./rebar3 skip_deps=true eunit"
-notifications:
-  email: paolo.dincau@gmail.com
 otp_release:
-    - 22.2
+  - 22.2
+
+before_script:
+- kerl list installations
+- echo "'127.0.0.1'." > ~/.hosts.erlang
+- rm -rf rebar3
+- git clone --branch 3.13.2 https://github.com/erlang/rebar3.git
+- cd rebar3 && ./bootstrap
+- ./rebar3 local install && export PATH=~/.cache/rebar3/bin:$PATH
+- echo "which rebar3 " && which rebar3
+- cd ..
+
+script:
+- "./rebar3/rebar3 compile"
+- "./rebar3/rebar3 eunit"
+
+notifications:
+  email: false

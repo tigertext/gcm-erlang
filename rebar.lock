@@ -1,7 +1,7 @@
 {"1.1.0",
 [{<<"epocxy">>,
   {git,"https://github.com/tigertext/epocxy.git",
-       {ref,"14dae47dee3d77ed62c773f485b1f2f883a5a89c"}},
+       {ref,"2bdb22deccc64757a978656d2edb070c2e7d1510"}},
   0},
  {<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.9">>},1},
  {<<"jsx">>,{pkg,<<"jsx">>,<<"2.8.3">>},0},

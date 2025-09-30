@@ -1,10 +1,14 @@
 sudo: false
 dist: jammy
 
+addons:
+  apt:
+    packages:
+    - uuid-dev
+
 before_script:
 - kerl list installations
 - echo "'127.0.0.1'." > ~/.hosts.erlang
-- sudo apt-get install erlang-parsetools=1:22.2.*
 - rm -rf rebar3
 - git clone --branch 3.13.2 https://github.com/erlang/rebar3.git
 - cd rebar3 && ./bootstrap

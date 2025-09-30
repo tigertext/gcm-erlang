@@ -5,6 +5,7 @@ addons:
   apt:
     packages:
     - uuid-dev
+    - erlang-parsetools
 
 before_script:
 - kerl list installations

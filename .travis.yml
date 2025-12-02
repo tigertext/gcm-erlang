@@ -1,41 +1,9 @@
-sudo: false
-dist: jammy
-
-addons:
-  apt:
-    packages:
-    - uuid-dev
-    - awscli
-
-env:
-  global:
-  - APP_NAME: gcm-erlang
-  - APP_ROOT_DIR: '/opt/gcm-erlang/'
-  - S3_BUCKET: "tt-packages"
-
-install: true
-before_install:
-- pip install --user awscli
-- aws --version
-- export PATH="/usr/local/bin/:$PATH"
-- aws s3 cp s3://${S3_BUCKET}/openssl-1.1.1.tar.gz ./
-- aws s3 cp s3://${S3_BUCKET}/otp22.3.4.27_jammy.tar.gz ./
-- sudo tar -xzpf openssl-1.1.1.tar.gz -C /usr/local/lib/
-- sudo tar zxfp otp22.3.4.27_jammy.tar.gz --strip-components=2 -C /usr/local/
-
-before_script:
-- kerl list installations
-- echo "'127.0.0.1'." > ~/.hosts.erlang
-- rm -rf rebar3
-- git clone --branch 3.13.3 https://github.com/erlang/rebar3.git
-- cd rebar3 && ./bootstrap
-- ./rebar3 local install && export PATH=~/.cache/rebar3/bin:$PATH
-- echo "which rebar3 " && which rebar3
-- cd ..
+language: erlang
+otp_release: 22.3.4
 
 script:
-- "./rebar3/rebar3 compile"
-- "./rebar3/rebar3 eunit"
+- "rebar3 compile"
+- "rebar3 eunit"
 
 notifications:
   email: false

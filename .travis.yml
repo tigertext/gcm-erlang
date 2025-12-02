@@ -2,8 +2,8 @@ language: erlang
 otp_release: 22.3.4.25
 
 script:
-- "rebar3 compile"
-- "rebar3 eunit"
+- "rebar compile"
+- "rebar eunit"
 
 notifications:
   email: false

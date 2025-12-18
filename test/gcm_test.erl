@@ -13,10 +13,12 @@ init_and_stop_test() ->
 start() ->
     {ok, _} = gcm:start_link(test, "APIKEY"),
     meck:new(httpc),
+    meck:new(cxy_ctl, [non_strict]),
     _Pid = self().
 
 stop(_) ->
     meck:unload(httpc),
+    meck:unload(cxy_ctl),
     gcm:stop(test).
 
 gcm_message_test_() ->
@@ -26,8 +28,13 @@ gcm_message_test_() ->
      {"It gets a 503 when GCM servers are down", ?setup(fun send_gcm_down/1)}].
 
 send_valid_message(Pid) ->
+    meck:expect(cxy_ctl, execute_task,
+    fun(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]) ->
+        gcm_request:send({RegIds, Message, Message_Id}, {Key, ErrorFun}),
+        ok
+    end),
     meck:expect(httpc, request,
-		fun(post, {_BaseURL, _AuthHeader, "application/json", _JSON}, [], []) ->
+		fun(post, {_BaseURL, _AuthHeader, "application/json", _JSON}, _Options, []) ->
 			Reply = <<"{\"multicast_id\":\"whatever\",\"success\":1,\"results\":[{\"message_id\":\"1:0408\"}]}">>,
 			Pid ! {ok, {{"", 200, ""}, [], Reply}}
 		end),
@@ -40,8 +47,13 @@ send_valid_message(Pid) ->
     end.
 
 send_malformed_json(Pid) ->
+    meck:expect(cxy_ctl, execute_task,
+      fun(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]) ->
+          gcm_request:send({RegIds, Message, Message_Id}, {Key, ErrorFun}),
+          ok
+    end),
     meck:expect(httpc, request,
-		fun(post, {_BaseURL, _AuthHeader, "application/json", _MalformedJSON}, [], []) ->
+		fun(post, {_BaseURL, _AuthHeader, "application/json", _MalformedJSON}, _Options, []) ->
 			Pid ! {ok, {{"", 400, ""}, [], []}}
 		end),
     gcm:push(test, [<<"Token">>], [{<<"data">>, [{<<"type">>, <<"wakeUp">>}]}]),
@@ -53,8 +65,13 @@ send_malformed_json(Pid) ->
     end.
 
 send_wrong_auth(Pid) ->
+    meck:expect(cxy_ctl, execute_task,
+    fun(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]) ->
+        gcm_request:send({RegIds, Message, Message_Id}, {Key, ErrorFun}),
+        ok
+    end),
     meck:expect(httpc, request,
-		fun(post, {_BaseURL, _WrongAuthHeader, "application/json", _JSON}, [], []) ->
+		fun(post, {_BaseURL, _WrongAuthHeader, "application/json", _JSON}, _Options, []) ->
 			Pid ! {ok, {{"", 401, ""}, [], []}}
 		end),
     gcm:push(test, [<<"Token">>], [{<<"data">>, [{<<"type">>, <<"wakeUp">>}]}]),
@@ -66,8 +83,13 @@ send_wrong_auth(Pid) ->
     end.
 
 send_gcm_down(Pid) ->
+    meck:expect(cxy_ctl, execute_task,
+    fun(gcm, gcm_request, send, [{RegIds, Message, Message_Id}, {Key, ErrorFun}]) ->
+        gcm_request:send({RegIds, Message, Message_Id}, {Key, ErrorFun}),
+        ok
+    end),
     meck:expect(httpc, request,
-		fun(post, {_BaseURL, _WrongAuthHeader, "application/json", _JSON}, [], []) ->
+		fun(post, {_BaseURL, _WrongAuthHeader, "application/json", _JSON}, _Options, []) ->
 			Pid ! {ok, {{"", 503, ""}, [], []}}
 		end),
     gcm:push(test, [<<"Token">>], [{<<"data">>, [{<<"type">>, <<"wakeUp">>}]}]),
